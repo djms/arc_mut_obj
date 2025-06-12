@@ -1,4 +1,5 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 use tokio::time::{Duration, sleep};
 
@@ -13,13 +14,13 @@ impl MyStruct {
         }
     }
 
-    fn get_value(&self) -> i32 {
-        let guard = self.value.lock().unwrap();
+    async fn get_value(&self) -> i32 {
+        let guard = self.value.lock().await;
         *guard
     }
 
-    fn set_value(&self, new_value: i32) {
-        let mut guard = self.value.lock().unwrap();
+    async fn set_value(&self, new_value: i32) {
+        let mut guard = self.value.lock().await;
         *guard = new_value;
     }
 
@@ -28,8 +29,8 @@ impl MyStruct {
         tokio::spawn(async move {
             loop {
                 sleep(Duration::from_secs(1)).await;
-                let current = this.get_value();
-                this.set_value(current + 1);
+                let current = this.get_value().await;
+                this.set_value(current + 1).await;
             }
         })
     }
@@ -39,8 +40,8 @@ impl MyStruct {
         tokio::spawn(async move {
             loop {
                 sleep(Duration::from_secs(5)).await;
-                let current = this.get_value();
-                this.set_value(current * 2);
+                let current = this.get_value().await;
+                this.set_value(current * 2).await;
             }
         })
     }
@@ -59,8 +60,8 @@ async fn main() {
     let _a_handle = my_obj.start_process_a();
     let _b_handle = my_obj.start_process_b();
 
-    for i in 1..10 {
+    for _ in 1..10 {
         sleep(Duration::from_secs(1)).await;
-        dbg!(my_obj.get_value());
+        dbg!(my_obj.get_value().await);
     }
 }
